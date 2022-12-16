@@ -5,6 +5,12 @@ _CITIES = (("Bordeaux", (44.833333,-0.566667)), ("Paris",(48.8566969,2.3514616))
 ("Clermont-Ferrand",(45.783333,3.083333)),("Strasbourg",(48.583333,7.75)),("Poitiers",(46.583333,0.333333)),
 ("Angers",(47.466667,-0.55)),("Montpellier",(43.6,3.883333)),("Caen",(49.183333,-0.35)))
 
+_STATE_CITIES = { 0: "Bordeaux", 1:"Paris", 2: "Nice", 3: "Lyon", 4:"Nantes", 5:"Brest", 6:"Lille",
+            7:"Clermont-Ferrant", 8:"Lille", 9:"Strasbourg", 10:"Poitiers", 11:"Angers", 12:"Montpellier", 13:"Caen"}
+
+_NID = 0
+_SEARCH = 1
+_GOT_FOOD = 2
 
 # Bordeaux est le point de départ
 # Définir comment on va définir la présence ou non de nourriture 
@@ -40,7 +46,58 @@ noms_villes = np.asarray(_CITIES)[:,0]
 
 correspondancies = list(zip(list_villes, noms_villes))
 
-clas
+def get_key_from_value(d, val):
+    keys = [k for k, v in d.items() if v == val]
+    if keys:
+        return keys[0]
+    return None
+
+
+class fourmi(): 
+    def __init__(self, init_state, visited_cities, to_visit,problem):
+        self.state = init_state
+        self.visited_cities = visited_cities
+        self.to_visit = to_visit
+
+    def calculate_to_visit(self):
+        if(self.state == 0): 
+            self.to_visit = _CITIES.items()
+        elif(self.state == 1):     
+            cities = _CITIES.keys()
+            for i in range(len(_CITIES)):
+                if(cities[i] not in self.visited_cities): 
+                    self.to_visit.append(cities[i])
+        elif(self.state == 2): 
+             self.to_visit = []
+
+    def next_city(self): 
+        last_visited = self.visited_cities.pop()
+        # add pheromone consideration 
+        
+        next_city = np.argmin(distances[get_key_from_value(_CITIES, last_visited),:])
+        return next_city
+
+    
+
+
+
+
+
+class problem(): 
+    def __init__(self, nb_fourmis, pheromones, distances, evaporation) -> None:
+        self.nb_fourmis = nb_fourmis
+        self.villes = _CITIES
+        self.mat_pheromone = pheromones
+        self.mat_distances = distances
+        self.evaporation = evaporation
+
+    def evaporate(self):      # à éxecuter à chaque tour 
+        for i in range(self.pheromones.shape[0]): 
+            for j in range(self.pheromones.shape[1]): 
+                self.pheromones[i][j] = self.pheromones[i][j] - self.pheromones[i][j]*(self.evaporation)/100
+
+
+
 
 def goAnt():
     # Retourne le chemin et le cout total trouvé par une fourmi sur son tour
@@ -75,7 +132,6 @@ def goAnt():
         index_ville_to_visit = probabilite[1, ville_to_visit]
 
         #voir si la ville a déjà été visitée
-        
         else: 
             chemin.append([distance[index_ville_to_visit, pos] ,pos])
 
@@ -85,7 +141,6 @@ def goAnt():
     return chemin # TODO
 
 # Ici tout est pret
-
 
 
 
