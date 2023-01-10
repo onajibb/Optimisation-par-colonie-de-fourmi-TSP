@@ -1,4 +1,5 @@
 import numpy as np
+import itertools
 
 _CITIES = (("Bordeaux", (44.833333,-0.566667)), ("Paris",(48.8566969,2.3514616)),("Nice",(43.7009358,7.2683912)),
 ("Lyon",(45.7578137,4.8320114)),("Nantes",(47.2186371,-1.5541362)),("Brest",(48.4,-4.483333)),("Lille",(50.633333,3.066667)),
@@ -38,17 +39,19 @@ COEFFEXPLORATION = 0.05
 Q = 1 / NBVILLES
 
 distances = np.zeros(shape=(NBVILLES, NBVILLES), dtype=np.float32)
-pheromones = np.zeros(shape=(NBVILLES, NBVILLES), dtype=np.float32)
-
+pheromones = 0.01 + np.zeros(shape=(NBVILLES, NBVILLES), dtype=np.float32)
+visibility = np.zeros(shape=(NBVILLES, NBVILLES), dtype=np.float32)
 # définir la ville de départ 
 
 
 for i in range(NBVILLES):
     for j in range(NBVILLES):
         distances[i,j] = distance(_CITIES[i][1], _CITIES[j][1])
+        if(i!=j): 
+            visibility[i,j] = 1/distances[i,j]
+        else: 
+            visibility[i,j] = 0
 
-visibility = 1/distances 
-print(min(visibility[1,:]))
 
 def get_key_from_value(d, val):
     keys = [k for k, v in d.items() if v == val]
@@ -60,22 +63,27 @@ def op(tau, eta):
     return tau**(ALPHA) * eta**(BETA)
 
 class Fourmi(): 
-    def __init__(self,visited_cities, to_visit):
+    def __init__(self,visited_cities):
         
-        # les villes visités par la fourmi 
+        # les villes visités par la fourmi et le chemin de la fourmi
         self.visited_cities = visited_cities
-        # les villes à visiter par la fourmi
-        self.to_visit = to_visit
+        inter = self.visited_cities
+        self.to_visit=[]
+        for ville in noms_villes:
+            if(ville not in self.visited_cities):
+                self.to_visit.append(ville)
         # la ville à visiter par la fourmi
         self.current_city_to_visit = None
         # la ville visité par la fourmi
-        inter = self.visited_cities
-        self.current_visited_city = visited_cities.pop()
+        self.current_visited_city = self.visited_cities[-1]
         # la distance totale parcouru 
-        self.path_length = None
+        self.path_length = 0
+        self.calculate_path_length()
         # état de la fourmi
         self.state = None
         self.get_state()
+        self.time = 0 
+
 
     def get_state(self): 
         if(self.current_visited_city == "Bordeaux"):
@@ -85,55 +93,86 @@ class Fourmi():
         else: 
             self.state = _SEARCHING_PATH
 
-
-
-    def calculate_to_visit(self):
-        if(self.state == 0): 
-            self.to_visit = [dict_cities[i] for i in list_villes]
-            return self.to_visit
-        elif(self.state == 1):     
-            self.to_visit = [dict_cities[i] for i in list_villes if dict_cities[i] not in self.visited_cities]
-            return self.to_visit
-        elif(self.state == 2): 
-             self.to_visit = []
-
     def next_city(self): 
         
-        proba = np.zeros(1,len(_CITIES))
+        proba = np.zeros((len(_CITIES),))
         index_cur = get_key_from_value(dict_cities, self.current_visited_city)
-        somme = pheromones[index_cur, get_key_from_value(dict_cities, city)]**ALPHA * visibility
         # add visibility
+        somme = sum((pheromones[index_cur, :] ** ALPHA) * (visibility[index_cur, : ] ** BETA))
         for city in self.to_visit: 
-            tau = pheromones[get_key_from_value(dict_cities, self.current_visited_city), get_key_from_value(dict_cities, city)]
-            eta = visibility[get_key_from_value(dict_cities, self.current_visited_city), get_key_from_value(dict_cities, city)]
-            proba[get_key_from_value(dict_cities, city)] = tau**(ALPHA) * eta**(BETA)/su
-        # add pheromone consideration 
-        
-        # calculate probability 
+            index_next_city = get_key_from_value(dict_cities, city)
+            tau = pheromones[index_cur, index_next_city]
+            eta = visibility[index_cur, index_next_city]
+            proba[index_next_city] = (tau**(ALPHA) * eta**(BETA))/somme
 
         # calculate the city to visit 
-        next_city = np.argmin(distances[get_key_from_value(_CITIES, last_visited),:])
+        next_city = np.argmax(proba)
+        next_city = dict_cities[next_city]
         return next_city
 
 
+    def update_path(self, city): 
+        self.visited_cities.append(city)
+            
+    def update_path_length(self, city): 
+        num_city_current  = get_key_from_value(dict_cities, self.current_visited_city)
+        num_city_to_visit = get_key_from_value(dict_cities, city)
+        self.path_length += distances[num_city_current, num_city_to_visit]
+        return 
+    
+    def calculate_path_length(self):  
+        inter = itertools.combinations(self.visited_cities, 2)
+           
+        for tup in inter: 
+            id1 = get_key_from_value(dict_cities, )
+            self.path_length += distances[tup[0], tup[1]]
+        
+    
 
-une_fourmi = Fourmi( ['Lyon'],noms_villes )
-print(une_fourmi.calculate_to_visit())
 
 
+une_fourmi = Fourmi( visited_cities=['Lyon', 'Bordeaux'])
+print(une_fourmi.current_visited_city)
+print("ville à visiter", une_fourmi.to_visit)
+print(une_fourmi.next_city())
+next_city = une_fourmi.next_city()
+une_fourmi.update_path(next_city)
+print(une_fourmi.visited_cities)
+print(une_fourmi.path_length)
+une_fourmi.update_path_length(next_city)
+print(une_fourmi.path_length)
 
-# class problem(): 
-#     def __init__(self, nb_fourmis, pheromones, distances, evaporation) -> None:
-#         self.nb_fourmis = nb_fourmis
-#         self.villes = _CITIES
-#         self.mat_pheromone = pheromones
-#         self.mat_distances = distances
-#         self.evaporation = evaporation
 
-#     def evaporate(self):      # à éxecuter à chaque tour 
-#         for i in range(self.pheromones.shape[0]): 
-#             for j in range(self.pheromones.shape[1]): 
-#                 self.pheromones[i][j] = self.pheromones[i][j] - self.pheromones[i][j]*(self.evaporation)/100
+class goAnt(): 
+    def __init__(self, nb_fourmis, pheromones, distances, evaporation) -> None:
+        self.nb_fourmis = nb_fourmis
+        self.villes = _CITIES
+        self.mat_pheromone = pheromones
+        self.mat_distances = distances
+        self.evaporation = evaporation
+        self.list_ants = []
+        for i in range(nb_fourmis):
+            fourmi = Fourmi(["Bordeaux"],noms_villes) 
+            self.list_ants.append(fourmi)       
+
+    def evaporate(self):      # à éxecuter à chaque tour 
+        for i in range(self.pheromones.shape[0]): 
+            for j in range(self.pheromones.shape[1]): 
+                self.pheromones[i][j] = EVAPORATION * self.pheromones[i][j] 
+
+    def count_ants_in_city(self, num_city): 
+        nb_fourmis_in_city = 0
+        for i in range(self.nb_fourmis): 
+            if(get_key_from_value(self.list_ants[i].current_visited_city, i) == num_city): 
+                nb_fourmis_in_city += 1
+        return nb_fourmis_in_city
+
+    def goAnt(self):
+        for i in range(len(_CITIES)):
+            n_ants = self.count_ants_in_city(i)
+            for k in range(n_ants): 
+                town_to = self.list_ants[k].next_city()
+                self.evaporate()
 
 
 
