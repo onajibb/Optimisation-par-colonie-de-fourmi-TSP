@@ -178,17 +178,16 @@ class goAnt():
                 for i in range(self.nb_fourmis):
                     self.gen_path(i, self.list_ants[i])
                     print("simulation ", j, 'i',"ant ", i, self.list_ants[i].current_visited_city, self.list_ants[i].visited_cities)            
-            print([fourmi.path_length for fourmi in self.list_ants.values()])
             len_shortest_path = min([fourmi.path_length for fourmi in self.list_ants.values()])
             self.len_paths.append(len_shortest_path)
-        
             self.generate_fourmi()
-            self.mat_pheromone = self.mat_pheromones_inter + self.mat_pheromone
-            self.mat_pheromones_inter = self.mat_pheromones_inter * 0
+            self.update_pheromones()
         print(self.len_paths)
 
-    def evaporate(self):      # à éxecuter à chaque tour 
-        self.mat_pheromone = self.mat_pheromone*0.9
+    def update_pheromones(self):      # à éxecuter à chaque tour 
+        self.mat_pheromone = self.mat_pheromone*0.9 + self.mat_pheromones_inter
+        self.mat_pheromones_inter = self.mat_pheromones_inter * 0
+
         
 
     def add_pheromones(self, id1, id2,i): 
@@ -221,7 +220,7 @@ class goAnt():
 
 goAntExample = goAnt(nb_fourmis=5, villes=_CITIES, pheromones=pheromones, distances=distances,visibility=visibility, evaporation=EVAPORATION )
 
-goAntExample.run(n_simulations=2)
+goAntExample.run(n_simulations=20)
 print(goAntExample.len_paths)
 
 # def goAnt(self):
